@@ -520,6 +520,44 @@ export const OpenCodeSettings = makeProviderSettingsSchema(
 );
 export type OpenCodeSettings = typeof OpenCodeSettings.Type;
 
+export const OmpSettings = makeProviderSettingsSchema(
+  {
+    // Off by default (like Cursor, Grok and OpenCode): omp is a third-party
+    // harness that ships on its own release cadence, so we do not probe for
+    // it on every install. Users opt in from Settings.
+    enabled: Schema.Boolean.pipe(
+      Schema.withDecodingDefault(Effect.succeed(false)),
+      Schema.annotateKey({ providerSettingsForm: { hidden: true } }),
+    ),
+    binaryPath: makeBinaryPathSetting("omp").pipe(
+      Schema.annotateKey({
+        title: "Binary path",
+        description: "Path to the omp binary.",
+        providerSettingsForm: { placeholder: "omp", clearWhenEmpty: "omit" },
+      }),
+    ),
+    // omp keeps auth, sessions, settings and caches per profile. Pointing an
+    // instance at its own profile keeps T3 Code runs from sharing state with
+    // the user's interactive omp sessions.
+    profile: TrimmedString.pipe(
+      Schema.withDecodingDefault(Effect.succeed("")),
+      Schema.annotateKey({
+        title: "Profile",
+        description: "Isolated omp profile for this instance. Blank uses the default profile.",
+        providerSettingsForm: { placeholder: "default", clearWhenEmpty: "omit" },
+      }),
+    ),
+    customModels: Schema.Array(Schema.String).pipe(
+      Schema.withDecodingDefault(Effect.succeed([])),
+      Schema.annotateKey({ providerSettingsForm: { hidden: true } }),
+    ),
+  },
+  {
+    order: ["binaryPath", "profile"],
+  },
+);
+export type OmpSettings = typeof OmpSettings.Type;
+
 export const ObservabilitySettings = Schema.Struct({
   otlpTracesUrl: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
   otlpMetricsUrl: TrimmedString.pipe(Schema.withDecodingDefault(Effect.succeed(""))),
@@ -662,6 +700,7 @@ export const ServerSettings = Schema.Struct({
     cursor: CursorSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
     grok: GrokSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
     opencode: OpenCodeSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
+    omp: OmpSettings.pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   }).pipe(Schema.withDecodingDefault(Effect.succeed({}))),
   // New driver-agnostic instance map. Keyed by `ProviderInstanceId`; values
   // are `ProviderInstanceConfig` envelopes. The driver-specific config blob
@@ -809,6 +848,13 @@ const OpenCodeSettingsPatch = Schema.Struct({
   customModels: Schema.optionalKey(Schema.Array(Schema.String)),
 });
 
+const OmpSettingsPatch = Schema.Struct({
+  enabled: Schema.optionalKey(Schema.Boolean),
+  binaryPath: Schema.optionalKey(TrimmedString),
+  profile: Schema.optionalKey(TrimmedString),
+  customModels: Schema.optionalKey(Schema.Array(Schema.String)),
+});
+
 export const ServerSettingsPatch = Schema.Struct({
   // Server settings
   enableLegacyTokenStreaming: Schema.optionalKey(Schema.Boolean),
@@ -850,6 +896,7 @@ export const ServerSettingsPatch = Schema.Struct({
       cursor: Schema.optionalKey(CursorSettingsPatch),
       grok: Schema.optionalKey(GrokSettingsPatch),
       opencode: Schema.optionalKey(OpenCodeSettingsPatch),
+      omp: Schema.optionalKey(OmpSettingsPatch),
     }),
   ),
   // Whole-map replacement for the new instance config. Patching individual
