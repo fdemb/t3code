@@ -59,6 +59,17 @@ export function ProviderIcon(props: ProviderIconProps) {
     );
   }
 
+  if (props.provider === "omp") {
+    // Geometric pi glyph; omp ships no logo, so this stays neutral.
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path fill={mono} d="M3.6 5.2h16.8v3.1H3.6z" />
+        <Path fill={mono} d="M7 8.3h3.1v10.5H7z" />
+        <Path fill={mono} d="M14.3 8.3h3.1v10.5h-3.1z" />
+      </Svg>
+    );
+  }
+
   // codex (and unknown drivers)
   return (
     <Svg width={size} height={size} viewBox="0 0 256 260" fill="none">

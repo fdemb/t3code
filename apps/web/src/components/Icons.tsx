@@ -650,6 +650,18 @@ export const AntigravityIcon: Icon = (props) => (
   </svg>
 );
 
+/**
+ * omp (Oh My Pi). A geometric pi glyph rather than a wordmark — omp ships no
+ * logo, so this stays deliberately neutral and legible at 14-16px.
+ */
+export const OmpIcon: Icon = ({ className, ...props }) => (
+  <svg {...props} viewBox="0 0 24 24" className={cn("fill-black dark:fill-white", className)}>
+    <path d="M3.6 5.2h16.8v3.1H3.6z" />
+    <path d="M7 8.3h3.1v10.5H7z" />
+    <path d="M14.3 8.3h3.1v10.5h-3.1z" />
+  </svg>
+);
+
 export const OpenCodeIcon: Icon = (props) => (
   <svg {...props} viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
     <g clipPath="url(#opencode__clip0_1311_94969)">
