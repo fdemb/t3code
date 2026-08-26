@@ -101,6 +101,16 @@ jobs:
           echo "result=merged" >> "$GITHUB_OUTPUT"
           echo "merged_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+      # GitHub re-enables a disabled workflow when a push changes its file.
+      # Upstream's release workflow uses private blacksmith runners, so every
+      # upstream edit to release.yml must be followed by another disable.
+      - name: Keep the upstream release workflow disabled
+        if: steps.merge.outputs.result == 'merged'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow disable release.yml
+
       # A push made with GITHUB_TOKEN does not trigger workflows, so CI on the
       # merge commit has to be requested explicitly.
       - name: Run CI on the merge commit
