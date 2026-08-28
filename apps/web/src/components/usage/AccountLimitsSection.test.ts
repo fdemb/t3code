@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { formatLimitWindowLabel, formatResetLabel } from "./AccountLimitsSection";
+import { availablePercent, formatLimitWindowLabel, formatResetLabel } from "./AccountLimitsSection";
 
 describe("account limit formatting", () => {
+  it("inverts provider usage into available capacity", () => {
+    expect(availablePercent(72)).toBe(28);
+    expect(availablePercent(0)).toBe(100);
+    expect(availablePercent(100)).toBe(0);
+  });
+
   it("names Codex's common windows", () => {
     expect(formatLimitWindowLabel(300)).toBe("5-hour limit");
     expect(formatLimitWindowLabel(10_080)).toBe("Weekly limit");

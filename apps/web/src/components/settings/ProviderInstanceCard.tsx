@@ -44,7 +44,11 @@ import { ProviderModelsSection } from "./ProviderModelsSection";
 import { ProviderInstanceIcon } from "../chat/ProviderInstanceIcon";
 import { ProviderAccentColorPicker } from "./ProviderAccentColorPicker";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
-import { formatLimitWindowLabel, formatResetLabel } from "../usage/AccountLimitsSection";
+import {
+  availablePercent,
+  formatLimitWindowLabel,
+  formatResetLabel,
+} from "../usage/AccountLimitsSection";
 import {
   getProviderVersionAdvisoryPresentation,
   PROVIDER_STATUS_STYLES,
@@ -602,7 +606,8 @@ export function ProviderInstanceCard({
           <span key={window.kind} className="inline-flex items-center gap-1.5">
             {index > 0 ? <span aria-hidden>·</span> : null}
             <span>
-              {formatLimitWindowLabel(window.windowDurationMinutes)} {window.usedPercent}% used
+              {formatLimitWindowLabel(window.windowDurationMinutes)}{" "}
+              {availablePercent(window.usedPercent)}% available
               {resetLabel ? ` · ${resetLabel.toLowerCase()}` : ""}
             </span>
           </span>

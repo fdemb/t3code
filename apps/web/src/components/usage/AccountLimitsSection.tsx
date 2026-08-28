@@ -11,6 +11,10 @@ export function formatLimitWindowLabel(durationMinutes: number | undefined): str
   return `${durationMinutes}-minute limit`;
 }
 
+export function availablePercent(usedPercent: number): number {
+  return Math.min(100, Math.max(0, 100 - usedPercent));
+}
+
 export function formatResetLabel(resetsAt: string | undefined, nowMs = Date.now()): string | null {
   if (resetsAt === undefined) return null;
   const resetMs = Date.parse(resetsAt);
@@ -27,7 +31,7 @@ export function formatResetLabel(resetsAt: string | undefined, nowMs = Date.now(
 
 function LimitWindow({ window }: { readonly window: ServerProviderAccountLimitWindow }) {
   const resetLabel = formatResetLabel(window.resetsAt);
-  const progressWidth = Math.min(100, Math.max(0, window.usedPercent));
+  const available = availablePercent(window.usedPercent);
   return (
     <div className="grid gap-2">
       <div className="flex items-baseline justify-between gap-4">
@@ -35,21 +39,18 @@ function LimitWindow({ window }: { readonly window: ServerProviderAccountLimitWi
           {formatLimitWindowLabel(window.windowDurationMinutes)}
         </span>
         <span className="text-sm font-medium text-foreground tabular-nums">
-          {window.usedPercent}% used
+          {available}% available
         </span>
       </div>
       <div
         className="h-1.5 overflow-hidden rounded-full bg-muted"
         role="progressbar"
-        aria-label={`${formatLimitWindowLabel(window.windowDurationMinutes)} usage`}
+        aria-label={`${formatLimitWindowLabel(window.windowDurationMinutes)} available`}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={window.usedPercent}
+        aria-valuenow={available}
       >
-        <div
-          className="h-full rounded-full bg-foreground/70"
-          style={{ width: `${progressWidth}%` }}
-        />
+        <div className="h-full rounded-full bg-foreground/70" style={{ width: `${available}%` }} />
       </div>
       {resetLabel ? <span className="text-xs text-muted-foreground">{resetLabel}</span> : null}
     </div>
