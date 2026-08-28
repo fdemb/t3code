@@ -47,6 +47,7 @@ jobs:
           ref: main
           fetch-depth: 0
           persist-credentials: true
+          token: ${{ secrets.FORK_SYNC_TOKEN }}
 
       - name: Fetch upstream
         run: |
