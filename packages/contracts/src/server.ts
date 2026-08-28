@@ -158,6 +158,20 @@ export const ServerProviderUpdateState = Schema.Struct({
 });
 export type ServerProviderUpdateState = typeof ServerProviderUpdateState.Type;
 
+export const ServerProviderAccountLimitWindow = Schema.Struct({
+  kind: Schema.Literals(["primary", "secondary"]),
+  usedPercent: Schema.Number.check(Schema.isBetween({ minimum: 0, maximum: 100 })),
+  windowDurationMinutes: Schema.optional(PositiveInt),
+  resetsAt: Schema.optional(IsoDateTime),
+});
+export type ServerProviderAccountLimitWindow = typeof ServerProviderAccountLimitWindow.Type;
+
+export const ServerProviderAccountLimits = Schema.Struct({
+  observedAt: IsoDateTime,
+  windows: Schema.Array(ServerProviderAccountLimitWindow),
+});
+export type ServerProviderAccountLimits = typeof ServerProviderAccountLimits.Type;
+
 export const ServerProvider = Schema.Struct({
   // Routing key for the configured instance this snapshot represents. This
   // is the only stable identity consumers may use for provider routing.
@@ -194,6 +208,7 @@ export const ServerProvider = Schema.Struct({
   skills: Schema.Array(ServerProviderSkill).pipe(Schema.withDecodingDefault(Effect.succeed([]))),
   versionAdvisory: Schema.optionalKey(ServerProviderVersionAdvisory),
   updateState: Schema.optionalKey(ServerProviderUpdateState),
+  accountLimits: Schema.optionalKey(ServerProviderAccountLimits),
 });
 export type ServerProvider = typeof ServerProvider.Type;
 

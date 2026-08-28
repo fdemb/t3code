@@ -16,6 +16,8 @@ import * as CodexErrors from "effect-codex-app-server/errors";
 import type {
   CodexSettings,
   ServerProvider,
+  ServerProviderAccountLimits,
+  ServerProviderAccountLimitWindow,
   ServerProviderState,
   ModelCapabilities,
   ProviderOptionDescriptor,
@@ -45,9 +47,51 @@ const CODEX_PRESENTATION = {
 
 export interface CodexAppServerProviderSnapshot {
   readonly account: CodexSchema.V2GetAccountResponse;
+  readonly accountLimits?: CodexSchema.V2GetAccountRateLimitsResponse;
   readonly version: string | undefined;
   readonly models: ReadonlyArray<ServerProviderModel>;
   readonly skills: ReadonlyArray<ServerProviderSkill>;
+}
+
+function mapCodexAccountLimitWindow(
+  kind: ServerProviderAccountLimitWindow["kind"],
+  window: CodexSchema.V2GetAccountRateLimitsResponse__RateLimitWindow | null | undefined,
+): ServerProviderAccountLimitWindow | undefined {
+  if (!window || window.usedPercent < 0 || window.usedPercent > 100) {
+    return undefined;
+  }
+
+  const windowDurationMinutes =
+    window.windowDurationMins !== null &&
+    window.windowDurationMins !== undefined &&
+    window.windowDurationMins > 0
+      ? window.windowDurationMins
+      : undefined;
+  const resetsAt =
+    window.resetsAt !== null && window.resetsAt !== undefined
+      ? Option.getOrUndefined(
+          DateTime.make(window.resetsAt * 1_000).pipe(Option.map(DateTime.formatIso)),
+        )
+      : undefined;
+
+  return {
+    kind,
+    usedPercent: window.usedPercent,
+    ...(windowDurationMinutes ? { windowDurationMinutes } : {}),
+    ...(resetsAt ? { resetsAt } : {}),
+  };
+}
+
+export function mapCodexAccountLimits(
+  response: CodexSchema.V2GetAccountRateLimitsResponse,
+  observedAt: ServerProviderAccountLimits["observedAt"],
+): ServerProviderAccountLimits | undefined {
+  const windows = [
+    mapCodexAccountLimitWindow("primary", response.rateLimits.primary),
+    mapCodexAccountLimitWindow("secondary", response.rateLimits.secondary),
+  ].filter((window): window is ServerProviderAccountLimitWindow => window !== undefined);
+
+  return windows.length > 0 ? { observedAt, windows } : undefined;
 }
 
 const REASONING_EFFORT_LABELS: Readonly<Record<string, string>> = {
@@ -389,18 +433,23 @@ const probeCodexAppServerProvider = Effect.fn("probeCodexAppServerProvider")(fun
     } satisfies CodexAppServerProviderSnapshot;
   }
 
-  const [skillsResponse, models] = yield* Effect.all(
-    [
-      client.request("skills/list", {
+  const { skillsResponse, models, accountLimits } = yield* Effect.all(
+    {
+      skillsResponse: client.request("skills/list", {
         cwds: [input.cwd],
       }),
-      requestAllCodexModels(client),
-    ],
+      models: requestAllCodexModels(client),
+      accountLimits:
+        accountResponse.account?.type === "chatgpt"
+          ? client.request("account/rateLimits/read", undefined).pipe(Effect.option)
+          : Effect.succeed(Option.none()),
+    },
     { concurrency: "unbounded" },
   );
 
   return {
     account: accountResponse,
+    ...(Option.isSome(accountLimits) ? { accountLimits: accountLimits.value } : {}),
     version,
     models: applyPreferredCodexDefaultModel(
       appendCustomCodexModels(models, input.customModels ?? []),
@@ -588,6 +637,9 @@ export const checkCodexProviderStatus = Effect.fn("checkCodexProviderStatus")(fu
 
   const snapshot = probeResult.success.value;
   const accountStatus = accountProbeStatus(snapshot.account);
+  const accountLimits = snapshot.accountLimits
+    ? mapCodexAccountLimits(snapshot.accountLimits, checkedAt)
+    : undefined;
 
   return buildServerProvider({
     presentation: CODEX_PRESENTATION,
@@ -595,6 +647,7 @@ export const checkCodexProviderStatus = Effect.fn("checkCodexProviderStatus")(fu
     checkedAt,
     models: snapshot.models,
     skills: snapshot.skills,
+    ...(accountLimits ? { accountLimits } : {}),
     slashCommands: [
       {
         name: "feedback",

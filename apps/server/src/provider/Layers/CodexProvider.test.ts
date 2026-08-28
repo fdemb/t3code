@@ -1,6 +1,48 @@
 import { assert, it } from "@effect/vitest";
 
-import { applyPreferredCodexDefaultModel, mapCodexModelCapabilities } from "./CodexProvider.ts";
+import {
+  applyPreferredCodexDefaultModel,
+  mapCodexAccountLimits,
+  mapCodexModelCapabilities,
+} from "./CodexProvider.ts";
+
+it("maps Codex account limit windows into provider status", () => {
+  const accountLimits = mapCodexAccountLimits(
+    {
+      rateLimits: {
+        primary: {
+          usedPercent: 72,
+          windowDurationMins: 300,
+          resetsAt: 1_776_383_440,
+        },
+        secondary: {
+          usedPercent: 31,
+          windowDurationMins: 10_080,
+          resetsAt: 1_776_715_200,
+        },
+      },
+    },
+    "2026-04-10T00:00:00.000Z",
+  );
+
+  assert.deepStrictEqual(accountLimits, {
+    observedAt: "2026-04-10T00:00:00.000Z",
+    windows: [
+      {
+        kind: "primary",
+        usedPercent: 72,
+        windowDurationMinutes: 300,
+        resetsAt: "2026-04-16T23:50:40.000Z",
+      },
+      {
+        kind: "secondary",
+        usedPercent: 31,
+        windowDurationMinutes: 10_080,
+        resetsAt: "2026-04-20T20:00:00.000Z",
+      },
+    ],
+  });
+});
 
 it("maps current Codex model capability fields", () => {
   const capabilities = mapCodexModelCapabilities({
