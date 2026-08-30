@@ -110,7 +110,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh workflow disable release.yml
+        run: |
+          set -euo pipefail
+          state="$(gh api "repos/${GH_REPO}/actions/workflows/release.yml" --jq .state)"
+          if [[ "$state" == "active" ]]; then
+            gh workflow disable release.yml
+          else
+            echo "::notice::release.yml is already disabled (${state})."
+          fi
 
       # A push made with GITHUB_TOKEN does not trigger workflows, so CI on the
       # merge commit has to be requested explicitly.
