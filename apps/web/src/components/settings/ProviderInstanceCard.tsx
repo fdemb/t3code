@@ -44,6 +44,11 @@ import { ProviderInstanceIcon, providerInstanceInitials } from "../chat/Provider
 import { ProviderAccentColorPicker } from "./ProviderAccentColorPicker";
 import { RedactedSensitiveText } from "./RedactedSensitiveText";
 import {
+  availablePercent,
+  formatLimitWindowLabel,
+  formatResetLabel,
+} from "../usage/AccountLimitsSection";
+import {
   getProviderVersionAdvisoryPresentation,
   PROVIDER_STATUS_STYLES,
   getProviderSummary,
@@ -611,6 +616,23 @@ export function ProviderInstanceCard({
     </>
   );
 
+  const accountLimitsNode = liveProvider?.accountLimits ? (
+    <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+      {liveProvider.accountLimits.windows.map((window, index) => {
+        const resetLabel = formatResetLabel(window.resetsAt);
+        return (
+          <span key={window.kind} className="inline-flex items-center gap-1.5">
+            {index > 0 ? <span aria-hidden>·</span> : null}
+            <span>
+              {formatLimitWindowLabel(window.windowDurationMinutes)}{" "}
+              {availablePercent(window.usedPercent)}% available
+              {resetLabel ? ` · ${resetLabel.toLowerCase()}` : ""}
+            </span>
+          </span>
+        );
+      })}
+    </p>
+  ) : null;
   const versionCodeNode = versionLabel ? (
     <code className="text-xs text-muted-foreground">{versionLabel}</code>
   ) : null;
@@ -819,6 +841,7 @@ export function ProviderInstanceCard({
               {summary.detail}
             </p>
           ) : null}
+          {accountLimitsNode}
         </div>
       </div>
 

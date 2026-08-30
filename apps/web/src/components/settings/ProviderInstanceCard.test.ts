@@ -80,6 +80,54 @@ describe("deriveProviderModelsForDisplay", () => {
     expect(markup).toContain("blur-[2px]");
     expect(markup).not.toContain("developer@example.com");
   });
+
+  it("shows account limit capacity in the editor header", () => {
+    const instanceId = ProviderInstanceId.make("codex");
+    const driver = ProviderDriverKind.make("codex");
+    const liveProvider: ServerProvider = {
+      instanceId,
+      driver,
+      enabled: true,
+      installed: true,
+      version: "1.0.0",
+      status: "ready",
+      auth: { status: "authenticated", email: "developer@example.com" },
+      checkedAt: "2026-08-27T12:00:00.000Z",
+      models: [],
+      slashCommands: [],
+      skills: [],
+      accountLimits: {
+        observedAt: "2026-08-27T12:00:00.000Z",
+        windows: [
+          {
+            kind: "primary",
+            windowDurationMinutes: 300,
+            usedPercent: 28,
+          },
+        ],
+      },
+    };
+
+    const markup = renderToStaticMarkup(
+      createElement(ProviderInstanceCard, {
+        instanceId,
+        instance: { driver },
+        driverOption: undefined,
+        liveProvider,
+        mode: "editor",
+        onUpdate: () => undefined,
+        hiddenModels: [],
+        favoriteModels: [],
+        modelOrder: [],
+        onHiddenModelsChange: () => undefined,
+        onFavoriteModelsChange: () => undefined,
+        onModelOrderChange: () => undefined,
+      }),
+    );
+
+    expect(markup).toContain("5-hour limit");
+    expect(markup).toContain("72% available");
+  });
   it("surfaces a failed probe message in both the list row and the editor", () => {
     const instanceId = ProviderInstanceId.make("codex_work");
     const driver = ProviderDriverKind.make("codex");

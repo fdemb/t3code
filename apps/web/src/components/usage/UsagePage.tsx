@@ -7,6 +7,7 @@ import type { DailyTotals, HourlyTotals } from "@t3tools/shared/usageMerge";
 import { isElectron } from "../../env";
 import { cn } from "../../lib/utils";
 import { useUsage, type EnvironmentUsageStatus } from "../../state/usage";
+import { useCodexAccountLimits } from "../../state/accountLimits";
 import {
   enumerateDays,
   enumerateHourStarts,
@@ -32,6 +33,7 @@ import {
 import { WorkspacePageContainer } from "../WorkspacePageContainer";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
 import { UsageProviderChart, type UsageChartMetric } from "./UsageProviderChart";
+import { AccountLimitsSection } from "./AccountLimitsSection";
 import { PROVIDER_ORDER, PROVIDER_PRESENTATION, providersWithUsage } from "./usageProviders";
 
 const WINDOW_OPTIONS = [
@@ -51,6 +53,7 @@ export function UsagePage() {
   const { days: windowDays, window } = windowSelection;
   const isPast24Hours = windowDays === 1;
   const { merged, environments, isPending, isPartial, refresh } = useUsage(window);
+  const { accounts: accountLimits, refresh: refreshAccountLimits } = useCodexAccountLimits();
 
   // Hold the content until every environment is terminal. Rendering merged
   // totals while devices are still answering makes every number on the page
@@ -93,6 +96,7 @@ export function UsagePage() {
     });
   };
   const refreshWindow = () => {
+    refreshAccountLimits();
     const nextWindow = makeWindow(windowDays, undefined, isPast24Hours ? "hour" : "day");
     if (
       nextWindow.sinceDay === window.sinceDay &&
@@ -220,6 +224,8 @@ export function UsagePage() {
                   duplicateSources={merged.duplicateSources}
                   staleEnvironments={merged.staleEnvironments}
                 />
+
+                <AccountLimitsSection accounts={accountLimits} />
 
                 <section className="grid gap-6 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
                   <div className="flex min-w-0 flex-col gap-5">

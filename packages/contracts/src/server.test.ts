@@ -92,6 +92,44 @@ describe("ServerProvider", () => {
     expect(parsed.continuation?.groupKey).toBe("codex:home:/Users/julius/.codex");
   });
 
+  it("decodes provider account limit windows", () => {
+    const parsed = decodeServerProvider({
+      ...baseProviderSnapshot,
+      accountLimits: {
+        observedAt: "2026-04-10T00:00:00.000Z",
+        windows: [
+          {
+            kind: "primary",
+            usedPercent: 72,
+            windowDurationMinutes: 300,
+            resetsAt: "2026-04-10T01:24:00.000Z",
+          },
+          {
+            kind: "secondary",
+            usedPercent: 31,
+            windowDurationMinutes: 10_080,
+            resetsAt: "2026-04-14T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+
+    expect(parsed.accountLimits?.windows).toEqual([
+      {
+        kind: "primary",
+        usedPercent: 72,
+        windowDurationMinutes: 300,
+        resetsAt: "2026-04-10T01:24:00.000Z",
+      },
+      {
+        kind: "secondary",
+        usedPercent: 31,
+        windowDurationMinutes: 10_080,
+        resetsAt: "2026-04-14T00:00:00.000Z",
+      },
+    ]);
+  });
+
   it("decodes optional legacy model metadata", () => {
     const parsed = decodeServerProvider({
       instanceId: "codex",
